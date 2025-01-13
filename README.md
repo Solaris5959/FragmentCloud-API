@@ -12,5 +12,3 @@ To run the various scripts for this API, you need to execute the following comma
 - To lint the project: `npm run lint`
 
 ---
-
-If the project isn't working, run `npm init` before you start debugging anything :)
