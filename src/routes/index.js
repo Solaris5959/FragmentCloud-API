@@ -1,5 +1,3 @@
-// src/routes/index.js
-
 const express = require('express');
 
 // version and author from package.json
