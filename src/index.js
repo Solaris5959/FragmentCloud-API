@@ -5,9 +5,6 @@
 require('dotenv').config();
 
 // We want to log any crash cases so we can debug later from logs.
-
-const unneededVariable = 'This variable is never used';
-
 const logger = require('./logger');
 
 // If we're going to crash because of an uncaught exception, log it first.
