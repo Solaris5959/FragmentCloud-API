@@ -13,24 +13,41 @@ const {
   listFragments,
   deleteFragment,
 } = require('./data/memory');
+
+const validTypes = [
+  'text/plain',
+  /*
+   Currently, only text/plain is supported. Others will be added later.
+
+  `text/markdown`,
+  `text/html`,
+  `application/json`,
+  `image/png`,
+  `image/jpeg`,
+  `image/webp`,
+  `image/gif`,
+  */
+];
+
 //const { read } = require('fs'); // Not sure what this is needed for
 
 class Fragment {
   constructor({ id, ownerId, created, updated, type, size = 0 }) {
-    if (!type || !Fragment.isSupportedType(type)) {
-      throw new Error('Type is required and must be a valid type');
-    } else if (!Number.isInteger(size) || size < 0) {
-      throw new Error('Size must be a number greater than or equal to 0');
-    } else if (!ownerId) {
-      throw new Error('OwnerId is required');
-    } else {
-      this.id = id || randomUUID();
-      this.ownerId = ownerId;
-      this.created = created || new Date().toISOString();
-      this.updated = updated || new Date().toISOString();
-      this.type = type;
-      this.size = size;
+    if (typeof size !== 'number' || size < 0) {
+      throw new Error('Size must be a positive number');
     }
+    if (!Fragment.isSupportedType(type)) {
+      throw new Error(`type must be a supported type and got ${type}`);
+    }
+    if (ownerId === undefined || type === undefined) {
+      throw new Error('OwnerId and type must be defined');
+    }
+    this.id = id || randomUUID();
+    this.ownerId = ownerId;
+    this.type = type;
+    this.size = size;
+    this.created = created || new Date().toISOString();
+    this.updated = updated || new Date().toISOString();
   }
 
   /**
@@ -134,20 +151,6 @@ class Fragment {
    * @returns {Array<string>} list of supported mime types
    */
   get formats() {
-    const validTypes = [
-      `text/plain`,
-      /*
-       Currently, only text/plain is supported. Others will be added later.
-
-      `text/markdown`,
-      `text/html`,
-      `application/json`,
-      `image/png`,
-      `image/jpeg`,
-      `image/webp`,
-      `image/gif`,
-      */
-    ];
     return validTypes.filter((type) => {
       const thisPrimaryType = this.mimeType.split('/')[0];
       const validPrimaryType = type.split('/')[0];
@@ -162,22 +165,10 @@ class Fragment {
    * @returns {boolean} true if we support this Content-Type (i.e., type/subtype)
    */
   static isSupportedType(value) {
-    const validTypes = [
-      'text/plain',
-      /*
-       Currently, only text/plain is supported. Others will be added later.
-
-      `text/markdown`,
-      `text/html`,
-      `application/json`,
-      `image/png`,
-      `image/jpeg`,
-      `image/webp`,
-      `image/gif`,
-      */
-    ];
     return validTypes.includes(contentType.parse(value).type);
   }
 }
 
-module.exports.Fragment = Fragment;
+module.exports = {
+  Fragment,
+};
