@@ -72,7 +72,7 @@ describe('GET /v1/fragments/:id', () => {
 
   // Throws 404 Error if fragment not found
   test('should return HTTP 404 error if fragment not found', async () => {
-    const res = await request(app).get('/v1/fragments/1234').auth('user1@email.com', 'password1');
+    const res = await request(app).get('/v1/fragments/0').auth('user1@email.com', 'password1');
 
     expect(res.statusCode).toBe(404);
   });
