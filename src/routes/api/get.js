@@ -26,21 +26,6 @@ const splitExtension = (id) => {
   return { fragmentId: arr[0], extension: extension };
 };
 
-const mimeType = {
-  '.txt': 'text/plain',
-  // '.md': 'text/markdown',
-  // '.html': 'text/html',
-  // '.csv': 'text/csv',
-  // '.json': 'application/json',
-  // '.yaml': 'application/yaml',
-  // '.yml': 'application/yaml',
-  // '.png': 'image/png',
-  // '.jpg': 'image/jpeg',
-  // '.webp': 'image/webp',
-  // '.avif': 'image/avif',
-  // '.gif': 'image/gif',
-};
-
 /**
  * Get the fragment with the passed ID for user with OwnerID
  */
@@ -49,7 +34,7 @@ const getFragmentByID = async (req, res) => {
   const ownerId = req.user;
   logger.debug(`Get fragment by ID ${id} for user ${ownerId}`);
 
-  let { fragmentId, extension } = splitExtension(id);
+  let { fragmentId } = splitExtension(id);
 
   let fragment, fragmentMetadata;
   try {
@@ -58,32 +43,6 @@ const getFragmentByID = async (req, res) => {
     logger.debug({ fragmentMetadata }, 'Fragment Metadata');
 
     fragment = new Fragment(fragmentMetadata);
-
-    if (extension) {
-      if (fragment.formats.includes(mimeType[extension])) {
-        logger.debug(`Return fragment in type ${extension}`);
-        try {
-          const fragmentData = await fragment.getConvertedInto(extension);
-          res.status(200).type(mimeType[extension]).send(fragmentData);
-          return;
-        } catch (err) {
-          logger.error({ err }, 'Error converting fragment');
-          res.status(415).json(createErrorResponse(415, err.message));
-          return;
-        }
-      } else {
-        logger.error({ extension }, 'Unsupport extension demanded!');
-        res
-          .status(415)
-          .json(
-            createErrorResponse(
-              415,
-              'The fragment cannot be converted into the extension specified!'
-            )
-          );
-        return;
-      }
-    }
 
     const fragmentData = await fragment.getData();
 
