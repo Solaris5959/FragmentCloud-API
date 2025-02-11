@@ -31,7 +31,7 @@ router.get('/', (req, res) => {
   res.status(200).json(
     createSuccessResponse({
       author,
-      githubUrl: 'https://github.com/hpatel292-seneca/fragments',
+      githubUrl: 'https://github.com/Solaris5959/fragments',
       version,
       hostname: hostname(),
     })
