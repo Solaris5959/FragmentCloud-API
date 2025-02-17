@@ -25,27 +25,35 @@ module.exports = async (req, res) => {
 
   fragment = new Fragment({ ownerId: req.user, type: type });
 
-  await fragment.save();
-  await fragment.setData(rawFragmentData);
+  try {
+    await fragment.save();
+    await fragment.setData(rawFragmentData);
 
-  logger.debug({ fragment }, 'Fragment created');
+    logger.debug({ fragment }, 'Fragment created');
 
-  const host = process.env.API_URL || req.headers.host;
-  const location = `http://${host}/v1/fragments/${fragment.id}`;
+    const host = process.env.API_URL || req.headers.host;
+    const location = `http://${host}/v1/fragments/${fragment.id}`;
 
-  res
-    .status(201)
-    .location(location)
-    .json(
-      createSuccessResponse({
-        fragment: {
-          id: fragment.id,
-          ownerId: fragment.ownerId,
-          created: fragment.created,
-          updated: fragment.updated,
-          type: fragment.type,
-          size: fragment.size,
-        },
-      })
-    );
+    res
+      .status(201)
+      .location(location)
+      .json(
+        createSuccessResponse({
+          fragment: {
+            id: fragment.id,
+            ownerId: fragment.ownerId,
+            created: fragment.created,
+            updated: fragment.updated,
+            type: fragment.type,
+            size: fragment.size,
+          },
+        })
+      );
+  } catch (err) {
+    logger.error({ err }, 'Failed to save fragment');
+    res
+      .status(500)
+      .json(createErrorResponse(500, 'Internal Server Error: Failed to save fragment'));
+    return;
+  }
 };

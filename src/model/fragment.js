@@ -72,16 +72,14 @@ class Fragment {
     if (!fragment) {
       throw new Error(`Fragment not found for ownerId=${ownerId} and id=${id}`);
     } else {
-      return Promise.resolve(
-        new Fragment({
-          id: fragment.id,
-          ownerId: fragment.ownerId,
-          created: fragment.created,
-          updated: fragment.updated,
-          type: fragment.type,
-          size: fragment.size,
-        })
-      );
+      return new Fragment({
+        id: fragment.id,
+        ownerId: fragment.ownerId,
+        created: fragment.created,
+        updated: fragment.updated,
+        type: fragment.type,
+        size: fragment.size,
+      });
     }
   }
 
@@ -123,7 +121,7 @@ class Fragment {
     }
 
     this.size = data.length;
-    this.save();
+    await this.save();
     return writeFragmentData(this.ownerId, this.id, data);
   }
 

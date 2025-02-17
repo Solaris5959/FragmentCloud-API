@@ -1,6 +1,7 @@
 const { createSuccessResponse, createErrorResponse } = require('../../response');
 const logger = require('../../logger');
 const { Fragment } = require('../../model/fragment');
+const path = require('path');
 
 /**
  * Get a list of fragments for the current user
@@ -20,10 +21,10 @@ const getFragments = async (req, res) => {
 };
 
 const splitExtension = (id) => {
-  const arr = id.split('.');
-  const extension = arr[1] ? '.' + arr[1] : null;
+  const extension = path.extname(id);
+  const baseName = path.basename(id, extension);
 
-  return { fragmentId: arr[0], extension: extension };
+  return { fragmentId: baseName, extension: extension || null };
 };
 
 /**
@@ -36,13 +37,11 @@ const getFragmentByID = async (req, res) => {
 
   let { fragmentId } = splitExtension(id);
 
-  let fragment, fragmentMetadata;
+  let fragment;
   try {
-    fragmentMetadata = await Fragment.byId(ownerId, fragmentId);
+    fragment = await Fragment.byId(ownerId, fragmentId);
 
-    logger.debug({ fragmentMetadata }, 'Fragment Metadata');
-
-    fragment = new Fragment(fragmentMetadata);
+    logger.debug({ fragment }, 'Fragment found:');
 
     const fragmentData = await fragment.getData();
 
