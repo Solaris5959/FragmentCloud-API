@@ -1,5 +1,7 @@
+# Docker Build and Push workflow (for automatically updating the latest docker container)
 name: Docker Build and Push
 
+# Runs whenever there is a push or PR to the main branch
 on:
   push:
     branches:
@@ -22,7 +24,7 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: ${{ secrets.DOCKER_USERNAME }} # These secrets are set in the GitHub repository settings
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # Set up Docker Buildx (for advanced features like caching)
@@ -38,6 +40,5 @@ jobs:
           push: true # Set to true to push to Docker Hub
           tags: ${{ secrets.DOCKER_USERNAME }}/fragments:latest
 
-      # Optionally, you can also add a step to log out from Docker Hub after the operation
       - name: Log out from Docker Hub
         run: docker logout
