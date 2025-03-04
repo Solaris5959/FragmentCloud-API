@@ -21,5 +21,13 @@ const server = stoppable(
   })
 );
 
+// Handle SIGINT for graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT. Closing server gracefully...');
+  server.close(() => {
+    console.log('Server closed.');
+    process.exit(0);
+  });
+});
 // Export our server instance so other parts of our code can access it if necessary.
 module.exports = server;
