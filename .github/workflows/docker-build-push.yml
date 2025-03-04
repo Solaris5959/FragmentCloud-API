@@ -10,6 +10,7 @@ on:
 
 jobs:
   build:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -33,9 +34,9 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile # Path to your Dockerfile, adjust if needed
+          file: Dockerfile
           push: true # Set to true to push to Docker Hub
-          tags: ${{ secrets.DOCKER_USERNAME }}/solaris595-fragments:latest # Tag with your Docker username and repository
+          tags: ${{ secrets.DOCKER_USERNAME }}/fragments:latest
 
       # Optionally, you can also add a step to log out from Docker Hub after the operation
       - name: Log out from Docker Hub
