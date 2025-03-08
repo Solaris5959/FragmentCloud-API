@@ -31,7 +31,9 @@ LABEL description="Fragments node.js microservice"
 ENV PORT=8080
 
 # Install dumb-init globally in the final stage
-RUN apt-get update && apt-get install -y dumb-init
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends dumb-init=1.2.5-1 && \
+    rm -rf /var/lib/apt/lists/*
 
 # Use /usr/src/app as our working directory
 WORKDIR /app
