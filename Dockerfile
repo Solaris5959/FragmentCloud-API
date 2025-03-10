@@ -9,7 +9,7 @@ ENV NODE_ENV=production \
     NPM_CONFIG_LOGLEVEL=warn \
     NPM_CONFIG_COLOR=false
 
-# Use /usr/src/app as our working directory
+# Use /app as our working directory
 WORKDIR /app
 
 # Copy package.json and package-lock.json before installing dependencies
@@ -35,7 +35,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends dumb-init=1.2.5-1 && \
     rm -rf /var/lib/apt/lists/*
 
-# Use /usr/src/app as our working directory
+# Use /app as our working directory
 WORKDIR /app
 
 # Copy installed dependencies from the dependencies stage
@@ -43,6 +43,9 @@ COPY --from=dependencies /app \/app
 
 # Copy application source code with correct ownership
 COPY --chown=node:node ./src ./src
+
+# Copy the HTPASSWD file for basic authentication
+COPY --chown=node:node ./tests/.htpasswd ./tests/.htpasswd
 
 # Use a non-root user for security
 USER node
