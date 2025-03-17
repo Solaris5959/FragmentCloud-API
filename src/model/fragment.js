@@ -146,12 +146,14 @@ class Fragment {
    * @returns {Array<string>} list of supported mime types
    */
   get formats() {
-    return validTypes.filter((type) => {
-      const thisPrimaryType = this.mimeType.split('/')[0];
-      const validPrimaryType = type.split('/')[0];
+    const validConversions = {
+      'text/plain': ['text/plain'],
+      'text/markdown': ['text/markdown', 'text/html'],
+      'text/html': ['text/html'],
+      'application/json': ['application/json'],
+    };
 
-      return thisPrimaryType === validPrimaryType;
-    });
+    return validConversions[this.mimeType] || false;
   }
 
   /**
