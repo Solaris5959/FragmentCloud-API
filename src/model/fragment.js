@@ -162,9 +162,14 @@ class Fragment {
    * @returns {boolean} true if we support this Content-Type (i.e., type/subtype)
    */
   static isSupportedType(value) {
-    return validTypes.includes(contentType.parse(value).type);
+    return value ? validTypes.includes(contentType.parse(value).type) : false;
   }
 
+  /**
+   * Converts the fragment data to the given type
+   * @param {Buffer} type the type to convert the fragment to
+   * @returns {Promise<Buffer>} the converted data
+   */
   async convertTo(type) {
     const fragmentData = await this.getData();
     const fragmentType = this.type;

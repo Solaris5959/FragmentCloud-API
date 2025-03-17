@@ -4,10 +4,10 @@ const { Fragment } = require('../../model/fragment');
 const path = require('path');
 
 const validTypeMap = {
-  // '.txt': 'text/plain',
-  // '.md': 'text/markdown',
+  '.txt': 'text/plain',
+  '.md': 'text/markdown',
   '.html': 'text/html',
-  // '.json': 'application/json',
+  '.json': 'application/json',
   // '.png': 'image/png',
   // '.jpg': 'image/jpeg',
   // '.jpeg': 'image/jpeg',
@@ -56,14 +56,11 @@ const getFragmentByID = async (req, res) => {
     logger.debug({ fragment }, 'Fragment found:');
 
     if (extension) {
-      if (
-        fragment.mimeType == 'text/markdown' && // Markdown req is for A2 as only md -> html is supported
-        Fragment.isSupportedType(validTypeMap[extension])
-      ) {
+      if (Fragment.isSupportedType(validTypeMap[extension])) {
         logger.debug(`Fragment is being converted to type ${validTypeMap[extension]}`);
 
         try {
-          fragmentData = await fragment.convertTo(extension);
+          fragmentData = await fragment.convertTo(validTypeMap[extension]);
 
           res.status(200).type(validTypeMap[extension]).send(fragmentData);
           return;
@@ -71,18 +68,18 @@ const getFragmentByID = async (req, res) => {
           logger.error(
             `Error while trying to convert the fragment to type ${validTypeMap[extension]}: ${error}`
           );
-          res.status(500).json(createErrorResponse(500, 'Internal Server Error'));
+
+          res
+            .status(415)
+            .json(createErrorResponse(415, `Error while converting the fragment, Error: ${error}`));
           return;
         }
       } else {
-        logger.error(`Fragment is not of type markdown or the extension is not supported.
-          Fragment Type: ${fragment.mimeType}, Extension: ${extension}`);
+        logger.error(`The requested extension is not currently supported. Extension: ${extension}`);
 
         res
           .status(415)
-          .json(
-            createErrorResponse(415, 'Fragment cannot be converted into the requested extension')
-          );
+          .json(createErrorResponse(415, 'The requested extension is not currently supported'));
         return;
       }
     } else {

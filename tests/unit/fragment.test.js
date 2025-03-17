@@ -120,6 +120,9 @@ describe('Fragment class', () => {
     test('common text types are supported, with and without charset', () => {
       expect(Fragment.isSupportedType('text/plain')).toBe(true);
       expect(Fragment.isSupportedType('text/plain; charset=utf-8')).toBe(true);
+      expect(Fragment.isSupportedType('text/markdown')).toBe(true);
+      expect(Fragment.isSupportedType('text/html')).toBe(true);
+      expect(Fragment.isSupportedType('application/json')).toBe(true);
     });
 
     test('other types are not supported', () => {
@@ -166,6 +169,33 @@ describe('Fragment class', () => {
         size: 0,
       });
       expect(fragment.formats).toEqual(['text/plain']);
+    });
+
+    test('formats returns the expected result for HTML', () => {
+      const fragment = new Fragment({
+        ownerId: '1234',
+        type: 'text/html; charset=utf-8',
+        size: 0,
+      });
+      expect(fragment.formats).toEqual(['text/html']);
+    });
+
+    test('formats returns the expected result for Markdown', () => {
+      const fragment = new Fragment({
+        ownerId: '1234',
+        type: 'text/markdown; charset=utf-8',
+        size: 0,
+      });
+      expect(fragment.formats).toEqual(['text/markdown', 'text/html']);
+    });
+
+    test('formats returns the expected result for JSON', () => {
+      const fragment = new Fragment({
+        ownerId: '1234',
+        type: 'application/json; charset=utf-8',
+        size: 0,
+      });
+      expect(fragment.formats).toEqual(['application/json']);
     });
   });
 
@@ -251,6 +281,66 @@ describe('Fragment class', () => {
 
       await Fragment.delete('1234', fragment.id);
       expect(() => Fragment.byId('1234', fragment.id)).rejects.toThrow();
+    });
+  });
+
+  describe('Type Conversions', () => {
+    test('text/plain to text/plain', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'text/plain', size: 0 });
+      await fragment.save();
+      await fragment.setData(Buffer.from('Hello'));
+
+      const convertedData = await fragment.convertTo('text/plain');
+      const originalData = await fragment.getData();
+
+      expect(convertedData.equals(Buffer.from('Hello'))).toBe(true);
+      expect(convertedData.equals(originalData)).toBe(true);
+    });
+
+    test('text/markdown to text/markdown', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'text/markdown', size: 0 });
+      await fragment.save;
+      await fragment.setData(Buffer.from('# Hello'));
+
+      const convertedData = await fragment.convertTo('text/markdown');
+      const originalData = await fragment.getData();
+
+      expect(convertedData.equals(Buffer.from('# Hello'))).toBe(true);
+      expect(convertedData.equals(originalData)).toBe(true);
+    });
+
+    test('text/markdown to text/html', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'text/markdown', size: 0 });
+      await fragment.save();
+      await fragment.setData(Buffer.from('# Hello'));
+
+      const convertedFragmentData = await fragment.convertTo('text/html');
+
+      expect(convertedFragmentData.toString()).toBe('<h1>Hello</h1>\n');
+    });
+
+    test('text/html to text/html', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'text/html', size: 0 });
+      await fragment.save();
+      await fragment.setData(Buffer.from('<h1>Hello</h1>'));
+
+      const convertedData = await fragment.convertTo('text/html');
+      const originalData = await fragment.getData();
+
+      expect(convertedData.equals(originalData)).toBe(true);
+    });
+
+    test('application/json to application/json', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'application/json', size: 0 });
+      await fragment.save();
+      const body = { text: 'Hello' };
+      await fragment.setData(Buffer.from(JSON.stringify(body)));
+
+      const convertedData = JSON.parse(await fragment.convertTo('application/json'));
+      const originalData = JSON.parse(await fragment.getData());
+
+      expect(convertedData).toStrictEqual(body);
+      expect(convertedData).toStrictEqual(originalData);
     });
   });
 });
