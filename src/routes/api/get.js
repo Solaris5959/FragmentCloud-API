@@ -71,7 +71,7 @@ const getFragmentByID = async (req, res) => {
 
           res
             .status(415)
-            .json(createErrorResponse(415, `Error while converting the fragment, Error: ${error}`));
+            .json(createErrorResponse(415, `Error while converting the fragment, ${error}`));
           return;
         }
       } else {
