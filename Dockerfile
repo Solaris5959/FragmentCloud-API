@@ -24,7 +24,7 @@ RUN npm ci --only=production
 
 FROM node:20.11.1-bullseye-slim AS build
 
-LABEL maintainer="Connor McDonald <cmcdonald30@myseneca.com>"
+LABEL maintainer="Connor McDonald"
 LABEL description="Fragments node.js microservice"
 
 # We default to use port 8080 in our service
