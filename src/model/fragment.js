@@ -3,6 +3,7 @@
 const { randomUUID } = require('crypto');
 // Use https://www.npmjs.com/package/content-type to create/parse Content-Type headers
 const contentType = require('content-type');
+const md = require('markdown-it')();
 
 // Functions for working with fragment metadata/data using our DB
 const {
@@ -16,17 +17,13 @@ const {
 
 const validTypes = [
   'text/plain',
-  /*
-   Currently, only text/plain is supported. Others will be added later.
-
-  `text/markdown`,
-  `text/html`,
-  `application/json`,
-  `image/png`,
-  `image/jpeg`,
-  `image/webp`,
-  `image/gif`,
-  */
+  'text/markdown',
+  'text/html',
+  'application/json',
+  // 'image/png',
+  // 'image/jpeg',
+  // 'image/webp',
+  // 'image/gif',
 ];
 
 //const { read } = require('fs'); // Not sure what this is needed for
@@ -164,6 +161,33 @@ class Fragment {
    */
   static isSupportedType(value) {
     return validTypes.includes(contentType.parse(value).type);
+  }
+
+  async convertTo(type) {
+    const fragmentData = await this.getData();
+    const fragmentType = this.type;
+
+    const conversionMap = {
+      'text/plain': {
+        'text/plain': () => fragmentData,
+      },
+      'text/markdown': {
+        'text/markdown': () => fragmentData,
+        'text/html': async () => md.render(fragmentData.toString('utf8')),
+      },
+      'text/html': {
+        'text/html': () => fragmentData,
+      },
+      'application/json': {
+        'application/json': () => fragmentData,
+      },
+    };
+
+    if (conversionMap[fragmentType] && conversionMap[fragmentType][type]) {
+      return conversionMap[fragmentType][type]();
+    } else {
+      throw new Error(`Conversion from ${fragmentType} to ${type} is not supported`);
+    }
   }
 }
 

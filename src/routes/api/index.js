@@ -1,7 +1,7 @@
 const express = require('express');
 const { Fragment } = require('../../model/fragment');
 const contentType = require('content-type');
-const { getFragments, getFragmentByID } = require('./get');
+const { getFragments, getFragmentByID, getFragmentInfo } = require('./get');
 
 const rawBody = () =>
   express.raw({
@@ -23,6 +23,8 @@ const router = express.Router();
 router.get('/fragments', getFragments);
 // Get /v1/fragments/:id
 router.get('/fragments/:id', getFragmentByID);
+// GET /v1/fragments/:id/info
+router.get('/fragments/:id/info', getFragmentInfo);
 // Post /v1/fragment
 router.post('/fragments', rawBody(), require('./post'));
 
