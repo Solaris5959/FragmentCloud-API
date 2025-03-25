@@ -2,7 +2,7 @@
 ##----- Install Dependencies -----##
 ####################################
 
-FROM node:20.11.1-bullseye-slim AS dependencies
+FROM node:23-bullseye-slim AS dependencies
 
 # Set environment variables for production optimizations
 ENV NODE_ENV=production \
@@ -22,7 +22,7 @@ RUN npm ci --only=production
 ##--- Build/Deploy Application ---##
 ####################################
 
-FROM node:20.11.1-bullseye-slim AS build
+FROM node:23-bullseye-slim AS build
 
 LABEL maintainer="Connor McDonald"
 LABEL description="Fragments node.js microservice"
