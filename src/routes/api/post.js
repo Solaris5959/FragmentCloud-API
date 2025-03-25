@@ -5,25 +5,28 @@ const contentType = require('content-type');
 
 module.exports = async (req, res) => {
   const { type } = contentType.parse(req);
+  const charset = contentType.parse(req).parameters.charset;
 
-  logger.debug('POST Request with fragment of type: ' + type);
+  logger.debug('POST Request with fragment of type: ' + type + ' ' + charset);
 
   const rawFragmentData = req.body;
   logger.debug(`Fragment body: ${rawFragmentData}`);
 
-  if (!Buffer.isBuffer(rawFragmentData)) {
+  if (!Buffer.isBuffer(rawFragmentData) || !Fragment.isSupportedType(type)) {
     logger.error({ type }, 'Attempted to store non-supported fragment type');
     res.status(415).json(createErrorResponse(415, 'Fragment type not supported'));
     return;
   }
 
-  logger.debug({ contentType: type }, 'Content-Type accepted');
+  logger.debug({ contentType: type, charset: charset }, 'Content-Type accepted');
 
   let fragment;
 
   logger.debug(`User creating fragment: ${req.user}`);
 
-  fragment = new Fragment({ ownerId: req.user, type: type });
+  if (typeof charset !== 'undefined')
+    fragment = new Fragment({ ownerId: req.user, type: type + '; charset=' + charset });
+  else fragment = new Fragment({ ownerId: req.user, type: type });
 
   try {
     await fragment.save();
