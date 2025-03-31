@@ -2,6 +2,7 @@ const express = require('express');
 const { Fragment } = require('../../model/fragment');
 const contentType = require('content-type');
 const { getFragments, getFragmentByID, getFragmentInfo } = require('./get');
+const { deleteFragmentByID } = require('./delete');
 
 const rawBody = () =>
   express.raw({
@@ -27,5 +28,7 @@ router.get('/fragments/:id', getFragmentByID);
 router.get('/fragments/:id/info', getFragmentInfo);
 // Post /v1/fragment
 router.post('/fragments', rawBody(), require('./post'));
+// Delete /v1/fragments/:id
+router.delete('/fragments/:id', deleteFragmentByID);
 
 module.exports = router;
