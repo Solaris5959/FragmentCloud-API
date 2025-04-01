@@ -80,10 +80,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPO: fragments
-          VERSION_TAG: latest
+          VERSION_TAG: ${{ github.ref_name }}
         with:
           task-definition: fragments-definition.json
-          container-name: fragments
+          container-name: fragments-container
           # Use the image we just built and pushed to ECR for this tag
           image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ env.VERSION_TAG }}
           # Add all the necessary environment variables, using GitHub Encrypted Secrets
