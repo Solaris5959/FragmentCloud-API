@@ -47,9 +47,6 @@ COPY --chown=node:node ./src ./src
 # Copy the HTPASSWD file for basic authentication
 COPY --chown=node:node ./tests/.htpasswd ./tests/.htpasswd
 
-# Use a non-root user for security
-USER node
-
 # Expose the application port
 EXPOSE ${PORT}
 
