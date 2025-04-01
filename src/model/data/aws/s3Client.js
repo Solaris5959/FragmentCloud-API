@@ -14,6 +14,7 @@ const logger = require('../../../logger');
  * @returns Object | undefined
  */
 const getCredentials = () => {
+  logger.debug('Attempting to use S3 Credentials');
   if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
     // See https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/modules/credentials.html
     const credentials = {

@@ -22,10 +22,6 @@
           "value": "80"
         },
         {
-          "name": "LOG_LEVEL",
-          "value": "info"
-        },
-        {
           "name": "AWS_S3_BUCKET_NAME",
           "value": "cmcdonald30-fragments"
         },
