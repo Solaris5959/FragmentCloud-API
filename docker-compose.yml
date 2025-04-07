@@ -7,9 +7,12 @@ services:
     # and current directory as the build context
     build: .
     # Environment variables to use
+    # passing .env for development
+    # env_file:
+    #   - .env
     environment:
       # Our API will be running on http://localhost:8080
-      - API_URL=localhost:8080
+      - API_URL=http://localhost:8080
       # Use Basic Auth (for running tests, CI)
       - HTPASSWD_FILE=tests/.htpasswd
       # Use the LOG_LEVEL set in the host environment, or default to info
@@ -25,21 +28,23 @@ services:
       # something else is defined in the env.
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-fragments}
       - AWS_DYNAMODB_TABLE_NAME=${AWS_DYNAMODB_TABLE_NAME:-fragments}
+      # The AWS credentials for LocalStack
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
     # Ports to publish
     ports:
       - '8080:8080'
 
-  # DynamoDB Local, see: https://hub.docker.com/r/amazon/dynamodb-local
+  # DynamoDB local, see: https://hub.docker.com/r/amazon/dynamodb-local
   dynamodb-local:
     image: amazon/dynamodb-local
     ports:
-      # Default port is 8000
       - '8000:8000'
-    # Run the database in memory, see:
+    # Run the database in memorty, see:
     # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.UsageNotes.html
     command: ['-jar', 'DynamoDBLocal.jar', '-inMemory']
 
-  # LocalStack for S3, see https://docs.localstack.cloud/get-started/#docker-compose
+  # LocalStack for S3, see see https://docs.localstack.cloud/get-started/#docker-compose
   # Interact via awscli-local, see https://docs.localstack.cloud/integrations/aws-cli/#installation
   localstack:
     # https://hub.docker.com/r/localstack/localstack

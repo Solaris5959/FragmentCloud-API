@@ -3,20 +3,21 @@ POST http://localhost:8080/v1/fragments
 Content-Type: application/json
 [BasicAuth]
 user1@email.com:password1
-{
-  "service": "DynamoDB"
-}
+{ "service": "DynamoDB" }
 
 # 2. Fragment created with 201
 HTTP/1.1 201
 [Captures]
 fragment1_url: header "Location"
 fragment1_id: jsonpath "$.fragment.id"
+[Asserts]
+header "Location" matches /^http:\/\/localhost:8080\/v1\/fragments\/[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/
 
 # 3. Get the above posted fragments info to verify
 GET {{fragment1_url}}/info
 [BasicAuth]
 user1@email.com:password1
+#Authorization: Basic dXNlcjFAZW1haWwuY29tOnBhc3N3b3JkMQ==
 
 HTTP 200
 [Asserts]
@@ -33,7 +34,8 @@ POST http://localhost:8080/v1/fragments
 Content-Type: text/markdown
 [BasicAuth]
 user1@email.com:password1
-`DynamoDB provides **excellent** performance.`
+#Authorization: Basic dXNlcjFAZW1haWwuY29tOnBhc3N3b3JkMQ==
+`DynamoDB is **great**.`
 
 # 5. Second Fragment created with 201
 HTTP/1.1 201
@@ -45,6 +47,7 @@ fragment2_id: jsonpath "$.fragment.id"
 GET {{fragment2_url}}/info
 [BasicAuth]
 user1@email.com:password1
+#Authorization: Basic dXNlcjFAZW1haWwuY29tOnBhc3N3b3JkMQ==
 
 HTTP 200
 [Asserts]
@@ -57,6 +60,7 @@ jsonpath "$.fragment.type" == "text/markdown"
 
 # 7. Retrieve all fragment ids for user to verify posted fragments exist
 GET http://localhost:8080/v1/fragments
+# Include authorization header
 [BasicAuth]
 user1@email.com:password1
 
@@ -68,6 +72,7 @@ jsonpath "$.fragments" includes {{fragment2_id}}
 
 # 8. Delete first fragment
 DELETE {{fragment1_url}}
+# Include authorization header
 [BasicAuth]
 user1@email.com:password1
 
@@ -75,6 +80,7 @@ HTTP/1.1 200
 
 # 10. Attempt to get the above deleted fragment
 GET {{fragment1_url}}
+# Include authorization header
 [BasicAuth]
 user1@email.com:password1
 
@@ -83,6 +89,7 @@ HTTP/1.1 404
 
 # 12. Get all fragment ids for user to verify only second fragment exists
 GET http://localhost:8080/v1/fragments
+# Include authorization header
 [BasicAuth]
 user1@email.com:password1
 

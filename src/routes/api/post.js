@@ -35,7 +35,8 @@ module.exports = async (req, res) => {
     logger.debug({ fragment }, 'Fragment created');
 
     const host = process.env.API_URL || req.headers.host;
-    const location = `http://${host}/v1/fragments/${fragment.id}`;
+    const cleanHost = host.replace(/^http?:\/\//i, '');
+    const location = `http://${cleanHost}/v1/fragments/${fragment.id}`;
 
     res
       .status(201)
