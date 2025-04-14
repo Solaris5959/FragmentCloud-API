@@ -8,11 +8,11 @@ const validTypeMap = {
   '.md': 'text/markdown',
   '.html': 'text/html',
   '.json': 'application/json',
-  // '.png': 'image/png',
-  // '.jpg': 'image/jpeg',
-  // '.jpeg': 'image/jpeg',
-  // '.webp': 'image/webp',
-  // '.gif': 'image/gif',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
 };
 
 /**

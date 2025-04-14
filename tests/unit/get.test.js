@@ -1,8 +1,25 @@
 const request = require('supertest');
-
+const fs = require('fs/promises');
+const path = require('path');
+const app = require('../../src/app');
 const { Fragment } = require('../../src/model/fragment');
 const hash = require('../../src/hash');
-const app = require('../../src/app');
+
+// Mapping extensions to MIME types
+const mimeTypes = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  gif: 'image/gif',
+};
+
+// File paths for prepared test images
+const testImagePaths = {
+  png: path.join(__dirname, 'test.png'),
+  jpeg: path.join(__dirname, 'test.jpeg'),
+  webp: path.join(__dirname, 'test.webp'),
+  gif: path.join(__dirname, 'test.gif'),
+};
 
 describe('GET /v1/fragments', () => {
   // If the request is missing the Authorization header, it should be forbidden
@@ -292,6 +309,70 @@ describe('GET /v1/fragments/:id.extension', () => {
       expect(res.text).toContain('The requested extension is not currently supported');
     });
 
+    test('Return fragment with text/plain -> text/plain type', async () => {
+      const ownerId = hash('user1@email.com');
+      const id = 'text-plain';
+      const fragment = new Fragment({ id, ownerId, type: 'text/plain' });
+      const body = 'Just plain text.';
+      await fragment.save();
+      await fragment.setData(Buffer.from(body));
+
+      const res = await request(app)
+        .get(`/v1/fragments/${id}.txt`)
+        .auth('user1@email.com', 'password1');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.text).toBe(body);
+    });
+
+    test('Return fragment with HTML -> text/plain type', async () => {
+      const ownerId = hash('user1@email.com');
+      const id = 'html-plain';
+      const fragment = new Fragment({ id, ownerId, type: 'text/html' });
+      const body = '<h1>Hello</h1>';
+      await fragment.save();
+      await fragment.setData(Buffer.from(body));
+
+      const res = await request(app)
+        .get(`/v1/fragments/${id}.txt`)
+        .auth('user1@email.com', 'password1');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.text.trim()).toBe('<h1>Hello</h1>');
+    });
+
+    test('Return fragment with JSON -> text/plain type', async () => {
+      const ownerId = hash('user1@email.com');
+      const id = 'json-plain';
+      const fragment = new Fragment({ id, ownerId, type: 'application/json' });
+      const jsonData = { hello: 'world' };
+      await fragment.save();
+      await fragment.setData(Buffer.from(JSON.stringify(jsonData)));
+
+      const res = await request(app)
+        .get(`/v1/fragments/${id}.txt`)
+        .auth('user1@email.com', 'password1');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.text.trim()).toBe(JSON.stringify(jsonData));
+    });
+
+    test('Return fragment with Markdown -> text/plain type', async () => {
+      const ownerId = hash('user1@email.com');
+      const id = '4321';
+      const fragment = new Fragment({ id: id, ownerId: ownerId, type: 'text/markdown' });
+      const body = '# Hello World';
+      fragment.save();
+      fragment.setData(Buffer.from(body));
+
+      const res = await request(app)
+        .get(`/v1/fragments/${id}.txt`)
+        .auth('user1@email.com', 'password1');
+
+      expect(res.statusCode).toBe(200);
+      expect(res.text).toBe('# Hello World');
+    });
+
     test('Return fragment with Markdown -> HTML type', async () => {
       const ownerId = hash('user1@email.com');
       const id = '4321';
@@ -306,6 +387,39 @@ describe('GET /v1/fragments/:id.extension', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.text).toBe('<h1>Hello World</h1>\n');
+    });
+
+    describe('Image conversion endpoint tests for all formats', () => {
+      const formats = ['png', 'jpeg', 'webp', 'gif'];
+
+      formats.forEach((inputExt) => {
+        formats.forEach((outputExt) => {
+          test(`Converts ${inputExt.toUpperCase()} to ${outputExt.toUpperCase()}`, async () => {
+            const ownerId = hash('user1@email.com');
+            const id = `${inputExt}-to-${outputExt}`;
+            const inputType = mimeTypes[inputExt];
+            const outputType = mimeTypes[outputExt];
+            const imageBuffer = await fs.readFile(testImagePaths[inputExt]);
+
+            const fragment = new Fragment({
+              id,
+              ownerId,
+              type: inputType,
+              size: imageBuffer.length,
+            });
+            await fragment.save();
+            await fragment.setData(imageBuffer);
+
+            const res = await request(app)
+              .get(`/v1/fragments/${id}.${outputExt}`)
+              .auth('user1@email.com', 'password1');
+
+            expect(res.statusCode).toBe(200);
+            expect(res.headers['content-type']).toBe(outputType);
+            expect(res.body.length).toBeGreaterThan(0);
+          });
+        });
+      });
     });
   });
 });

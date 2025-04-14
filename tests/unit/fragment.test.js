@@ -647,9 +647,6 @@ describe('Fragment class', () => {
         const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer();
         const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
 
-        console.log('inputRaw', inputRaw);
-        console.log('convertedRaw', convertedRaw);
-
         expect(convertedRaw.equals(inputRaw)).toBe(true);
       });
 
