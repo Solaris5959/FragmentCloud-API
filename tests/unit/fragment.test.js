@@ -1,13 +1,11 @@
 const { Fragment } = require('../../src/model/fragment');
+const sharp = require('sharp');
 
 // Wait for a certain number of ms (default 50). Used for waiting for async functions.
 const wait = async (ms = 50) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const validTypes = [
   `text/plain`,
-  /*
-   Currently, only text/plain is supported. Others will be added later.
-
   `text/markdown`,
   `text/html`,
   `application/json`,
@@ -15,7 +13,6 @@ const validTypes = [
   `image/jpeg`,
   `image/webp`,
   `image/gif`,
-  */
 ];
 
 describe('Fragment class', () => {
@@ -123,6 +120,11 @@ describe('Fragment class', () => {
       expect(Fragment.isSupportedType('text/markdown')).toBe(true);
       expect(Fragment.isSupportedType('text/html')).toBe(true);
       expect(Fragment.isSupportedType('application/json')).toBe(true);
+      expect(Fragment.isSupportedType('application/json; charset=utf-8')).toBe(true);
+      expect(Fragment.isSupportedType('image/png')).toBe(true);
+      expect(Fragment.isSupportedType('image/jpeg')).toBe(true);
+      expect(Fragment.isSupportedType('image/webp')).toBe(true);
+      expect(Fragment.isSupportedType('image/gif')).toBe(true);
     });
 
     test('other types are not supported', () => {
@@ -177,7 +179,7 @@ describe('Fragment class', () => {
         type: 'text/html; charset=utf-8',
         size: 0,
       });
-      expect(fragment.formats).toEqual(['text/html']);
+      expect(fragment.formats).toEqual(['text/html', 'text/plain']);
     });
 
     test('formats returns the expected result for Markdown', () => {
@@ -186,7 +188,7 @@ describe('Fragment class', () => {
         type: 'text/markdown; charset=utf-8',
         size: 0,
       });
-      expect(fragment.formats).toEqual(['text/markdown', 'text/html']);
+      expect(fragment.formats).toEqual(['text/markdown', 'text/html', 'text/plain']);
     });
 
     test('formats returns the expected result for JSON', () => {
@@ -195,7 +197,40 @@ describe('Fragment class', () => {
         type: 'application/json; charset=utf-8',
         size: 0,
       });
-      expect(fragment.formats).toEqual(['application/json']);
+      expect(fragment.formats).toEqual(['application/json', 'text/plain']);
+    });
+
+    test('formats returns the expected result for PNG', () => {
+      const fragment = new Fragment({
+        ownerId: '1234',
+        type: 'image/png',
+        size: 0,
+      });
+      expect(fragment.formats).toEqual(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+    });
+    test('formats returns the expected result for JPEG', () => {
+      const fragment = new Fragment({
+        ownerId: '1234',
+        type: 'image/jpeg',
+        size: 0,
+      });
+      expect(fragment.formats).toEqual(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+    });
+    test('formats returns the expected result for WEBP', () => {
+      const fragment = new Fragment({
+        ownerId: '1234',
+        type: 'image/webp',
+        size: 0,
+      });
+      expect(fragment.formats).toEqual(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+    });
+    test('formats returns the expected result for GIF', () => {
+      const fragment = new Fragment({
+        ownerId: '1234',
+        type: 'image/gif',
+        size: 0,
+      });
+      expect(fragment.formats).toEqual(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
     });
   });
 
@@ -297,6 +332,18 @@ describe('Fragment class', () => {
       expect(convertedData.equals(originalData)).toBe(true);
     });
 
+    test('text/markdown to text/plain', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'text/markdown', size: 0 });
+      await fragment.save();
+      await fragment.setData(Buffer.from('# Hello'));
+
+      const convertedData = await fragment.convertTo('text/plain');
+      const originalData = await fragment.getData();
+
+      expect(convertedData.toString()).toBe('# Hello');
+      expect(convertedData.equals(originalData)).toBe(true); // Because there is no parsing, the raw tags will still be present
+    });
+
     test('text/markdown to text/markdown', async () => {
       const fragment = new Fragment({ ownerId: '1234', type: 'text/markdown', size: 0 });
       await fragment.save;
@@ -319,6 +366,18 @@ describe('Fragment class', () => {
       expect(convertedFragmentData.toString()).toBe('<h1>Hello</h1>\n');
     });
 
+    test('text/html to text/plain', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'text/html', size: 0 });
+      await fragment.save();
+      await fragment.setData(Buffer.from('<h1>Hello</h1>'));
+
+      const convertedData = await fragment.convertTo('text/plain');
+      const originalData = await fragment.getData();
+
+      expect(convertedData.toString()).toBe('<h1>Hello</h1>');
+      expect(convertedData.equals(originalData)).toBe(true);
+    });
+
     test('text/html to text/html', async () => {
       const fragment = new Fragment({ ownerId: '1234', type: 'text/html', size: 0 });
       await fragment.save();
@@ -327,6 +386,19 @@ describe('Fragment class', () => {
       const convertedData = await fragment.convertTo('text/html');
       const originalData = await fragment.getData();
 
+      expect(convertedData.equals(originalData)).toBe(true);
+    });
+
+    test('application/json to text/plain', async () => {
+      const fragment = new Fragment({ ownerId: '1234', type: 'application/json', size: 0 });
+      await fragment.save();
+      const body = { text: 'Hello' };
+      await fragment.setData(Buffer.from(JSON.stringify(body)));
+
+      const convertedData = await fragment.convertTo('text/plain');
+      const originalData = await fragment.getData();
+
+      expect(convertedData.toString()).toBe(JSON.stringify(body));
       expect(convertedData.equals(originalData)).toBe(true);
     });
 
@@ -341,6 +413,275 @@ describe('Fragment class', () => {
 
       expect(convertedData).toStrictEqual(body);
       expect(convertedData).toStrictEqual(originalData);
+    });
+
+    describe('Image Conversions', () => {
+      test('image/png to image/png', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/png', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.png').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/png');
+        const originalData = await fragment.getData();
+
+        expect(convertedData.equals(originalData)).toBe(true);
+      });
+
+      test('image/png to image/jpeg', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/png', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.png').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/jpeg');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('jpeg');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer(); // Remove alpha from all Webp/Jpeg -> Gif and vice versa as they do not have alpha channels
+        const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/png to image/webp', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/png', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.png').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/webp');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('webp');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/png to image/gif', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/png', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.png').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/gif');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('gif');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/jpeg to image/png', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/jpeg', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.jpeg').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/png');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('png');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/jpeg to image/jpeg', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/jpeg', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.jpeg').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/jpeg');
+        const originalData = await fragment.getData();
+
+        expect(convertedData.equals(originalData)).toBe(true);
+      });
+
+      test('image/jpeg to image/webp', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/jpeg', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.jpeg').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/webp');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('webp');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/jpeg to image/gif', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/jpeg', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.jpeg').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/gif');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('gif');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/webp to image/png', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/webp', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.webp').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/png');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('png');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/webp to image/jpeg', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/webp', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.webp').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/jpeg');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('jpeg');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/webp to image/webp', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/webp', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.webp').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/webp');
+        const originalData = await fragment.getData();
+
+        expect(convertedData.equals(originalData)).toBe(true);
+      });
+
+      test('image/webp to image/gif', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/webp', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.webp').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/gif');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('gif');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/gif to image/png', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/gif', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.gif').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/png');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('png');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/gif to image/jpeg', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/gif', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.gif').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/jpeg');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('jpeg');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
+
+        console.log('inputRaw', inputRaw);
+        console.log('convertedRaw', convertedRaw);
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/gif to image/webp', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/gif', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.gif').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/webp');
+        const originalData = await fragment.getData();
+
+        const convertedMeta = await sharp(convertedData).metadata();
+        expect(convertedMeta.format).toBe('webp');
+
+        const inputRaw = await sharp(originalData).resize(1, 1).removeAlpha().raw().toBuffer();
+        const convertedRaw = await sharp(convertedData).resize(1, 1).removeAlpha().raw().toBuffer();
+
+        expect(convertedRaw.equals(inputRaw)).toBe(true);
+      });
+
+      test('image/gif to image/gif', async () => {
+        const fragment = new Fragment({ ownerId: '1234', type: 'image/gif', size: 0 });
+        await fragment.save();
+        const data = await sharp('tests/unit/test.gif').toBuffer();
+        await fragment.setData(data);
+
+        const convertedData = await fragment.convertTo('image/gif');
+        const originalData = await fragment.getData();
+
+        expect(convertedData.equals(originalData)).toBe(true);
+      });
     });
   });
 });
